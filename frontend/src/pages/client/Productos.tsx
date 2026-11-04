@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import {
   useSearchParams,
@@ -6,6 +5,7 @@ import {
 } from "react-router-dom";
 
 import {
+  getDiscountPercentage,
   money,
   products,
 } from "../../data/products";
@@ -92,6 +92,7 @@ export default function Productos() {
     setOnlyStock(false);
     setSort("relevancia");
     setParams({});
+    setNotice("Filtros limpiados.");
   }
 
   return (
@@ -124,11 +125,14 @@ export default function Productos() {
           </option>
         </select>
 
-        <small>{filtered.length} productos</small>
+        <small role="status" aria-live="polite">
+          {filtered.length}{" "}
+          {filtered.length === 1 ? "producto" : "productos"}
+        </small>
       </div>
 
       <div className="catalog-layout">
-        <aside className="filters">
+        <aside className="filters" aria-label="Filtros de productos">
           <h2>CATEGORÍAS</h2>
 
           {categories.map((c) => (
@@ -138,6 +142,7 @@ export default function Productos() {
               className={
                 c === category ? "active" : ""
               }
+              aria-pressed={c === category}
               onClick={() =>
                 setParams(
                   c === "Todas"
@@ -159,35 +164,42 @@ export default function Productos() {
           ))}
 
           <div className="advanced-filters">
-            <label>
+            <label htmlFor="filter-brand">
               Marca
-              <select
-                value={brand}
-                onChange={(e) =>
-                  setBrand(e.target.value)
-                }
-              >
-                {brands.map((b) => (
-                  <option key={b}>{b}</option>
-                ))}
-              </select>
             </label>
+            <select
+              id="filter-brand"
+              value={brand}
+              onChange={(e) =>
+                setBrand(e.target.value)
+              }
+            >
+              {brands.map((b) => (
+                <option key={b}>{b}</option>
+              ))}
+            </select>
 
-            <label>
+            <label htmlFor="filter-price">
               Precio máximo (S/)
-              <input
-                type="number"
-                min="0"
-                placeholder="Sin límite"
-                value={priceMax}
-                onChange={(e) =>
-                  setPriceMax(e.target.value)
-                }
-              />
             </label>
+            <input
+              id="filter-price"
+              type="number"
+              min="0"
+              inputMode="decimal"
+              placeholder="Sin límite"
+              value={priceMax}
+              onChange={(e) =>
+                setPriceMax(e.target.value)
+              }
+            />
 
-            <label className="checkbox-label">
+            <label
+              className="checkbox-label"
+              htmlFor="filter-stock"
+            >
               <input
+                id="filter-stock"
                 type="checkbox"
                 checked={onlyStock}
                 onChange={(e) =>
@@ -198,6 +210,7 @@ export default function Productos() {
             </label>
 
             <button
+              type="button"
               className="btn-secondary"
               onClick={reset}
             >
@@ -207,7 +220,7 @@ export default function Productos() {
         </aside>
 
         <div>
-          <p className="feedback" role="status">
+          <p className="feedback" role="status" aria-live="polite">
             {notice ||
               "Selecciona un producto y agrégalo al carrito."}
           </p>
@@ -222,6 +235,7 @@ export default function Productos() {
               </p>
 
               <button
+                type="button"
                 className="btn-primary"
                 onClick={reset}
               >
@@ -236,37 +250,48 @@ export default function Productos() {
                     (x) => x.product.id === p.id
                   )?.qty || 0;
 
+                const discount = getDiscountPercentage(p);
+                const soldOut = p.stock <= 0;
+                const lowStock = !soldOut && p.stock <= 5;
+                const maxReached = !soldOut && qty >= p.stock;
+
                 return (
                   <article
                     className="product-card"
                     key={p.id}
                   >
                     <div className="product-image">
-  <img
-    src={p.image}
-    alt={`Fotografía del producto ${p.name}`}
-    loading="lazy"
-    onError={(e) => {
-      const img = e.currentTarget;
-      img.style.display = "none";
+                      <img
+                        src={p.image}
+                        alt={`Fotografía del producto ${p.name}`}
+                        loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          img.style.display = "none";
 
-      img.parentElement?.classList.add("image-missing");
-    }}
-  />
+                          img.parentElement?.classList.add("image-missing");
+                        }}
+                      />
 
-  <div className="image-placeholder">
-    <span>📦</span>
-    <small>Imagen no disponible</small>
-  </div>
+                      <div className="image-placeholder">
+                        <small>Imagen no disponible</small>
+                      </div>
 
-  <span className="discount">-12%</span>
+                      {discount > 0 && (
+                        <span className="discount">
+                          -{discount}%
+                          <span className="visually-hidden">
+                            {" "}de descuento
+                          </span>
+                        </span>
+                      )}
 
-  {p.stock <= 5 && (
-    <span className="limited">
-      ⚠ Últimas unidades
-    </span>
-  )}
-</div>
+                      {lowStock && (
+                        <span className="limited">
+                          Últimas unidades
+                        </span>
+                      )}
+                    </div>
 
                     <div className="product-info">
                       <small>
@@ -277,8 +302,20 @@ export default function Productos() {
                       <p>{p.description}</p>
 
                       <div className="rating">
-                        ★★★★★{" "}
-                        <small>({p.reviews})</small>
+                        {p.reviews > 0 ? (
+                          <>
+                            <span aria-hidden="true">
+                              {"★".repeat(Math.round(p.rating))}
+                              {"☆".repeat(5 - Math.round(p.rating))}
+                            </span>{" "}
+                            <span className="visually-hidden">
+                              Calificación {p.rating} de 5.
+                            </span>
+                            <small>({p.reviews} reseñas)</small>
+                          </>
+                        ) : (
+                          <small>Sin reseñas</small>
+                        )}
                       </div>
 
                       <div className="price">
@@ -286,28 +323,41 @@ export default function Productos() {
                           {money(p.price)}
                         </strong>
 
-                        <del>
-                          {money(p.originalPrice)}
-                        </del>
+                        {p.originalPrice > p.price && (
+                          <del>
+                            <span className="visually-hidden">
+                              Precio anterior:{" "}
+                            </span>
+                            {money(p.originalPrice)}
+                          </del>
+                        )}
                       </div>
 
                       <div
                         className={
-                          p.stock <= 5
+                          soldOut || lowStock
                             ? "stock low"
                             : "stock"
                         }
                       >
-                        {p.stock <= 5
-                          ? "⚠ Stock limitado"
-                          : "✓ En stock"}{" "}
-                        ({p.stock})
+                        {soldOut
+                          ? "Agotado"
+                          : lowStock
+                          ? `Stock limitado (${p.stock})`
+                          : `En stock (${p.stock})`}
                       </div>
 
                       <button
                         className="btn-primary full"
                         type="button"
-                        disabled={qty >= p.stock}
+                        disabled={soldOut || maxReached}
+                        aria-label={
+                          soldOut
+                            ? `${p.name}: producto agotado`
+                            : maxReached
+                            ? `${p.name}: ya agregaste el máximo disponible`
+                            : `Agregar ${p.name} al carrito`
+                        }
                         onClick={() => {
                           add(p);
                           setNotice(
@@ -315,7 +365,9 @@ export default function Productos() {
                           );
                         }}
                       >
-                        {qty >= p.stock
+                        {soldOut
+                          ? "Producto agotado"
+                          : maxReached
                           ? "Máximo disponible"
                           : "Agregar al carrito"}
                       </button>

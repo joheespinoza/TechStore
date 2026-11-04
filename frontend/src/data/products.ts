@@ -157,7 +157,7 @@ export const products: Product[] = [
     reviews: 47,
   },
 
-  // ------------------------------------------
+  // ---------------------------A---------------
   // PRODUCTO 6 - LOGITECH MOUSE
   // ------------------------------------------
 
@@ -354,3 +354,65 @@ export const getDiscountPercentage = (
 
   return Math.max(0, Math.round(discount));
 };
+// ============================================
+// ADMINISTRACIÓN DEL CATÁLOGO (datos de demostración)
+// ============================================
+
+export const CATEGORY_LIST: Category[] = [
+  "Laptops",
+  "Desktops",
+  "Monitores",
+  "Teclados",
+  "Mouse",
+  "Auriculares",
+  "Almacenamiento",
+  "Redes",
+  "Impresoras",
+  "Accesorios",
+];
+
+const CATEGORY_PREFIX: Record<Category, string> = {
+  Laptops: "LAP",
+  Desktops: "DES",
+  Monitores: "MON",
+  Teclados: "TEC",
+  Mouse: "MOU",
+  Auriculares: "AUR",
+  Almacenamiento: "ALM",
+  Redes: "RED",
+  Impresoras: "IMP",
+  Accesorios: "ACC",
+};
+
+/** Código automático del producto. Ejemplo: LAP-0001 */
+export const productCode = (product: Product): string =>
+  `${CATEGORY_PREFIX[product.category]}-${String(product.id).padStart(4, "0")}`;
+
+/** Siguiente identificador disponible. */
+export const nextProductId = (): number =>
+  products.reduce((max, p) => Math.max(max, p.id), 0) + 1;
+
+const CATALOG_KEY = "techstore-demo-catalog-v1";
+
+/** Guarda el catálogo y actualiza la lista en memoria. */
+export function saveCatalog(list: Product[]): void {
+  try {
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(list));
+  } catch {
+    /* sin almacenamiento disponible */
+  }
+  products.splice(0, products.length, ...list);
+}
+
+/** Si el admin ya modificó el catálogo, se carga al iniciar. */
+try {
+  const raw = localStorage.getItem(CATALOG_KEY);
+  if (raw) {
+    const saved: unknown = JSON.parse(raw);
+    if (Array.isArray(saved)) {
+      products.splice(0, products.length, ...(saved as Product[]));
+    }
+  }
+} catch {
+  /* se mantiene el catálogo de demostración */
+}

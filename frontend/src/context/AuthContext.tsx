@@ -1,10 +1,11 @@
-
 import {
   createContext,
   useContext,
   useState,
   type ReactNode,
 } from "react";
+
+export type Role = "CLIENT" | "ADMIN";
 
 export type User = {
   id: string;
@@ -13,7 +14,7 @@ export type User = {
   email: string;
   phone: string;
   company: string;
-  role: "CLIENT";
+  role: Role;
 };
 
 type StoredUser = User & {
@@ -32,15 +33,31 @@ type AuthContextType = {
 const KEY = "techstore-demo-users-v1";
 const SESSION = "techstore-demo-session-v1";
 
+/* Cuenta de demostración. Se reemplazará por autenticación real en el backend. */
+const DEMO_ADMIN: StoredUser = {
+  id: "admin-demo",
+  name: "Administrador",
+  lastName: "TechStore",
+  email: "admin@techstore.pe",
+  phone: "",
+  company: "TechStore",
+  role: "ADMIN",
+  password: "Admin123!",
+};
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function getUsers(): StoredUser[] {
+function getStoredUsers(): StoredUser[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || "[]");
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
+}
+
+function getUsers(): StoredUser[] {
+  return [DEMO_ADMIN, ...getStoredUsers()];
 }
 
 function getSession(): User | null {
@@ -81,10 +98,8 @@ export function AuthProvider({
   }
 
   function register(data: Omit<StoredUser, "id" | "role">) {
-    const users = getUsers();
-
     if (
-      users.some(
+      getUsers().some(
         (u) =>
           u.email.toLowerCase() ===
           data.email.trim().toLowerCase()
@@ -102,7 +117,7 @@ export function AuthProvider({
 
     localStorage.setItem(
       KEY,
-      JSON.stringify([...users, created])
+      JSON.stringify([...getStoredUsers(), created])
     );
 
     const { password: _password, ...safe } = created;

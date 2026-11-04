@@ -1,4 +1,3 @@
-
 import {
   Routes,
   Route,
@@ -17,6 +16,7 @@ import Register from "../pages/auth/Register";
 import Productos from "../pages/client/Productos";
 import Carrito from "../pages/client/Carrito";
 import Checkout from "../pages/client/Checkout";
+import MisPedidos from "../pages/client/MisPedidos";
 
 import Dashboard from "../pages/paneladmin/Dashboard";
 import GestionProductos from "../pages/paneladmin/GestionProductos";
@@ -41,37 +41,35 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/mis-pedidos"
+          element={
+            <ProtectedRoute loginMessage="Inicia sesión para ver tus pedidos.">
+              <MisPedidos />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route
         path="/admin"
-        element={<AdminLayout />}
+        element={
+          <ProtectedRoute
+            role="ADMIN"
+            loginMessage="Inicia sesión como administrador."
+          >
+            <AdminLayout />
+          </ProtectedRoute>
+        }
       >
-        <Route
-          path="dashboard"
-          element={<Dashboard />}
-        />
-
-        <Route
-          path="productos"
-          element={<GestionProductos />}
-        />
-
-        <Route
-          path="pedidos"
-          element={<GestionPedidos />}
-        />
-
-        <Route
-          path="reportes"
-          element={<Reportes />}
-        />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="productos" element={<GestionProductos />} />
+        <Route path="pedidos" element={<GestionPedidos />} />
+        <Route path="reportes" element={<Reportes />} />
       </Route>
 
-      <Route
-        path="*"
-        element={<NotFound />}
-      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
